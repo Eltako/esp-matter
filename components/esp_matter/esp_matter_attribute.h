@@ -243,7 +243,7 @@ attribute_t *create_time_since_reset(cluster_t *cluster, uint64_t value);
 } /* diagnostics_network_ethernet */
 
 namespace bridged_device_basic_information {
-constexpr uint8_t k_max_node_label_length = 32;
+constexpr uint8_t k_max_node_label_length = 33;
 
 namespace attribute {
 attribute_t *create_vendor_name(cluster_t *cluster, char *value, uint16_t length);
