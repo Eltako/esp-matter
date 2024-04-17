@@ -70,7 +70,7 @@ cluster_t *create(endpoint_t *endpoint, config_t *config, uint8_t flags);
 namespace basic_information {
 typedef struct config {
     uint16_t cluster_revision;
-    char node_label[32];
+    char node_label[33];
     config() : cluster_revision(2), node_label{0} {}
 } config_t;
 
