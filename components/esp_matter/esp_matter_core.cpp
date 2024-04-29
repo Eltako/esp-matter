@@ -787,6 +787,10 @@ static void device_callback_internal(const ChipDeviceEvent * event, intptr_t arg
         break;
 
     case chip::DeviceLayer::DeviceEventType::kCommissioningComplete:
+        if (chip::DeviceLayer::ConnectivityMgr().IsWiFiAPActive()) {
+            chip::DeviceLayer::ConnectivityMgr().SetWiFiAPMode(
+                chip::DeviceLayer::ConnectivityManager::kWiFiAPMode_Disabled);
+        }
         ESP_LOGI(TAG, "Commissioning Complete");
         PlatformMgr().ScheduleWork(deinit_ble_if_commissioned, reinterpret_cast<intptr_t>(nullptr));
         break;
@@ -800,13 +804,20 @@ static void device_callback_internal(const ChipDeviceEvent * event, intptr_t arg
     }
 }
 
-static esp_err_t chip_init(event_callback_t callback, intptr_t callback_arg)
+static esp_err_t chip_init(event_callback_t callback, intptr_t callback_arg, chip::RendezvousInformationFlags rendezvous_flags)
 {
     VerifyOrReturnError(chip::Platform::MemoryInit() == CHIP_NO_ERROR, ESP_ERR_NO_MEM, ESP_LOGE(TAG, "Failed to initialize CHIP memory pool"));
     VerifyOrReturnError(PlatformMgr().InitChipStack() == CHIP_NO_ERROR, ESP_FAIL, ESP_LOGE(TAG, "Failed to initialize CHIP stack"));
 
     setup_providers();
-    // ConnectivityMgr().SetWiFiAPMode(ConnectivityManager::kWiFiAPMode_Enabled);
+
+    if (rendezvous_flags.Has(chip::RendezvousInformationFlag::kBLE)) {
+        chip::DeviceLayer::ConnectivityMgr().SetBLEAdvertisingEnabled(true);
+    }
+    if (rendezvous_flags.Has(chip::RendezvousInformationFlag::kSoftAP)) {
+        chip::DeviceLayer::ConnectivityMgr().SetWiFiAPMode(
+            chip::DeviceLayer::ConnectivityManager::kWiFiAPMode_Enabled);
+    }
     if (PlatformMgr().StartEventLoopTask() != CHIP_NO_ERROR) {
         chip::Platform::MemoryShutdown();
         ESP_LOGE(TAG, "Failed to launch Matter main task");
@@ -845,7 +856,10 @@ static esp_err_t chip_init(event_callback_t callback, intptr_t callback_arg)
     return ESP_OK;
 }
 
-esp_err_t start(event_callback_t callback, intptr_t callback_arg)
+esp_err_t start(event_callback_t callback,
+                intptr_t callback_arg,
+                chip::RendezvousInformationFlags rendezvous_flags,
+                char const * const hostname)
 {
     VerifyOrReturnError(!esp_matter_started, ESP_ERR_INVALID_STATE, ESP_LOGE(TAG, "esp_matter has started"));
     esp_err_t err = esp_event_loop_create_default();
@@ -858,7 +872,7 @@ esp_err_t start(event_callback_t callback, intptr_t callback_arg)
 #endif
     esp_matter_ota_requestor_init();
 
-    err = chip_init(callback, callback_arg);
+    err = chip_init(callback, callback_arg, rendezvous_flags);
     VerifyOrReturnError(err == ESP_OK, err, ESP_LOGE(TAG, "Error initializing matter"));
     esp_matter_started = true;
 #if defined(CONFIG_ESP_MATTER_ENABLE_MATTER_SERVER) && defined(CONFIG_ESP_MATTER_ENABLE_DATA_MODEL)
