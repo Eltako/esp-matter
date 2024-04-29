@@ -38,6 +38,7 @@
 
 #include <esp_matter_nvs.h>
 #include <singly_linked_list.h>
+#include <esp_netif.h>
 
 using chip::CommandId;
 using chip::DataVersion;
@@ -870,6 +871,17 @@ esp_err_t start(event_callback_t callback,
 #if CHIP_DEVICE_CONFIG_ENABLE_WIFI
     VerifyOrReturnError(chip::DeviceLayer::Internal::ESP32Utils::InitWiFiStack() == CHIP_NO_ERROR, ESP_FAIL, ESP_LOGE(TAG, "Error initializing Wi-Fi stack"));
 #endif
+    if (hostname) {
+        if (auto netif = esp_netif_get_handle_from_ifkey(::chip::DeviceLayer::Internal::ESP32Utils::kDefaultWiFiStationNetifKey); netif) {
+            if (auto err = esp_netif_set_hostname(netif, hostname); err != ESP_OK) {
+                ESP_LOGE(TAG, "Failed to set hostname on interface %s: %s", ::esp_netif_get_ifkey(netif), esp_err_to_name(err));
+                return err;
+            }
+            else {
+                ESP_LOGI(TAG, "Hostname on interface %s set to %s", ::esp_netif_get_ifkey(netif), hostname);
+            }
+        }
+    }
     esp_matter_ota_requestor_init();
 
     err = chip_init(callback, callback_arg, rendezvous_flags);
