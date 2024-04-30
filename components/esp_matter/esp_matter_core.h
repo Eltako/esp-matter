@@ -19,6 +19,7 @@
 #include <app/util/af-types.h>
 #include <esp_err.h>
 #include <esp_matter_attribute_utils.h>
+#include <setup_payload/SetupPayload.h>
 
 using chip::app::ConcreteCommandPath;
 using chip::DeviceLayer::ChipDeviceEvent;
@@ -59,7 +60,10 @@ typedef void (*event_callback_t)(const ChipDeviceEvent *event, intptr_t arg);
  * @return ESP_OK on success.
  * @return error in case of failure.
  */
-esp_err_t start(event_callback_t callback, intptr_t callback_arg = static_cast<intptr_t>(NULL));
+esp_err_t start(event_callback_t callback,
+                intptr_t callback_arg = static_cast<intptr_t>(NULL),
+                chip::RendezvousInformationFlags rendezvous_flags = chip::RendezvousInformationFlag::kBLE,
+                char const * const hostname = nullptr);
 
 /** Factory reset
  *

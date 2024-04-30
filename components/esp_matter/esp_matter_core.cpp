@@ -951,6 +951,10 @@ static void device_callback_internal(const ChipDeviceEvent * event, intptr_t arg
         break;
 
     case chip::DeviceLayer::DeviceEventType::kCommissioningComplete:
+        if (chip::DeviceLayer::ConnectivityMgr().IsWiFiAPActive()) {
+            chip::DeviceLayer::ConnectivityMgr().SetWiFiAPMode(
+                chip::DeviceLayer::ConnectivityManager::kWiFiAPMode_Disabled);
+        }
         ESP_LOGI(TAG, "Commissioning Complete");
         break;
 
@@ -963,7 +967,7 @@ static void device_callback_internal(const ChipDeviceEvent * event, intptr_t arg
     }
 }
 
-static esp_err_t chip_init(event_callback_t callback, intptr_t callback_arg)
+static esp_err_t chip_init(event_callback_t callback, intptr_t callback_arg, chip::RendezvousInformationFlags rendezvous_flags)
 {
     if (chip::Platform::MemoryInit() != CHIP_NO_ERROR) {
         ESP_LOGE(TAG, "Failed to initialize CHIP memory pool");
@@ -975,8 +979,13 @@ static esp_err_t chip_init(event_callback_t callback, intptr_t callback_arg)
     }
 
     setup_providers();
-    ConnectivityMgr().SetBLEAdvertisingEnabled(true);
-    // ConnectivityMgr().SetWiFiAPMode(ConnectivityManager::kWiFiAPMode_Enabled);
+    if (rendezvous_flags.Has(chip::RendezvousInformationFlag::kBLE)) {
+        chip::DeviceLayer::ConnectivityMgr().SetBLEAdvertisingEnabled(true);
+    }
+    if (rendezvous_flags.Has(chip::RendezvousInformationFlag::kSoftAP)) {
+        chip::DeviceLayer::ConnectivityMgr().SetWiFiAPMode(
+            chip::DeviceLayer::ConnectivityManager::kWiFiAPMode_Enabled);
+    }
     if (PlatformMgr().StartEventLoopTask() != CHIP_NO_ERROR) {
         chip::Platform::MemoryShutdown();
         ESP_LOGE(TAG, "Failed to launch Matter main task");
@@ -1020,7 +1029,10 @@ static esp_err_t chip_init(event_callback_t callback, intptr_t callback_arg)
     return ESP_OK;
 }
 
-esp_err_t start(event_callback_t callback, intptr_t callback_arg)
+esp_err_t start(event_callback_t callback,
+                intptr_t callback_arg,
+                chip::RendezvousInformationFlags rendezvous_flags,
+                char const * const hostname)
 {
     if (esp_matter_started) {
         ESP_LOGE(TAG, "esp_matter has started");
@@ -1040,9 +1052,20 @@ esp_err_t start(event_callback_t callback, intptr_t callback_arg)
         return ESP_FAIL;
     }
 #endif
+    if (hostname) {
+        if (auto netif = esp_netif_get_handle_from_ifkey(::chip::DeviceLayer::Internal::ESP32Utils::kDefaultWiFiStationNetifKey); netif) {
+            if (auto err = esp_netif_set_hostname(netif, hostname); err != ESP_OK) {
+                ESP_LOGE(TAG, "Failed to set hostname on interface %s: %s", ::esp_netif_get_ifkey(netif), esp_err_to_name(err));
+                return err;
+            }
+            else {
+                ESP_LOGI(TAG, "Hostname on interface %s set to %s", ::esp_netif_get_ifkey(netif), hostname);
+            }
+        }
+    }
     esp_matter_ota_requestor_init();
 
-    err = chip_init(callback, callback_arg);
+    err = chip_init(callback, callback_arg, rendezvous_flags);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error initializing matter");
         return err;
