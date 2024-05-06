@@ -857,8 +857,10 @@ cluster_t *create(endpoint_t *endpoint, config_t *config, uint8_t flags)
 } /* time_synchronization */
 
 namespace bridged_device_basic_information {
-const function_generic_t *function_list = NULL;
-const int function_flags = CLUSTER_FLAG_NONE;
+const function_generic_t function_list[] = {
+    (function_generic_t) MatterBridgedDeviceBasicInformationClusterServerAttributeChangedCallback,
+};
+const int function_flags = CLUSTER_FLAG_ATTRIBUTE_CHANGED_FUNCTION;
 
 cluster_t *create(endpoint_t *endpoint, config_t *config, uint8_t flags)
 {
