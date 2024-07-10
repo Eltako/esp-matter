@@ -15,6 +15,7 @@
 #pragma once
 
 #include <esp_matter_core.h>
+#include <esp_matter_attribute.h>
 #include <esp_matter_feature.h>
 #include <stdint.h>
 
@@ -43,7 +44,7 @@ void plugin_init_callback_common();
 namespace descriptor {
 typedef struct config {
     uint16_t cluster_revision;
-    config() : cluster_revision(1) {}
+    config() : cluster_revision(2) {}
 } config_t;
 
 cluster_t *create(endpoint_t *endpoint, config_t *config, uint8_t flags);
@@ -70,7 +71,7 @@ cluster_t *create(endpoint_t *endpoint, config_t *config, uint8_t flags);
 namespace basic_information {
 typedef struct config {
     uint16_t cluster_revision;
-    char node_label[33];
+    char node_label[k_max_node_label_length + 1];
     config() : cluster_revision(2), node_label{0} {}
 } config_t;
 
@@ -101,7 +102,7 @@ typedef struct config {
     bool update_possible;
     uint8_t update_state;
     nullable<uint8_t> update_state_progress;
-    config() : cluster_revision(1), update_possible(1), update_state(0), update_state_progress(0) {}
+    config() : cluster_revision(1), update_possible(true), update_state(0), update_state_progress() {}
 } config_t;
 
 cluster_t *create(endpoint_t *endpoint, config_t *config, uint8_t flags);
@@ -231,7 +232,7 @@ typedef struct config {
     uint16_t cluster_revision;
     uint8_t status;
     uint8_t order;
-    char description[61];
+    char description[k_max_description_length + 1];
     feature::wired::config_t wired;
     feature::battery::config_t battery;
     feature::rechargeable::config_t rechargeable;
@@ -327,7 +328,7 @@ typedef struct config {
     nullable<uint8_t> on_level;
     uint8_t options;
     feature::lighting::config_t lighting;
-    config() : cluster_revision(5), current_level(0xFE), on_level(0xFE), options(0) {}
+    config() : cluster_revision(5), current_level(), on_level(), options(0) {}
 } config_t;
 
 cluster_t *create(endpoint_t *endpoint, config_t *config, uint8_t flags, uint32_t features);
@@ -538,6 +539,7 @@ cluster_t *create(endpoint_t *endpoint, config_t *config, uint8_t flags);
 namespace smoke_co_alarm {
 typedef struct config {
     uint16_t cluster_revision;
+    config() : cluster_revision(1) {}
 } config_t;
 
 cluster_t *create(endpoint_t *endpoint, config_t *config, uint8_t flags);
@@ -601,7 +603,7 @@ typedef struct config {
     nullable<uint16_t> measured_value;
     nullable<uint16_t> min_measured_value;
     nullable<uint16_t> max_measured_value;
-    config() : cluster_revision(3), measured_value(), min_measured_value(0), max_measured_value(10000) {}
+    config() : cluster_revision(3), measured_value(), min_measured_value(), max_measured_value() {}
 } config_t;
 
 cluster_t *create(endpoint_t *endpoint, config_t *config, uint8_t flags);
@@ -633,7 +635,7 @@ cluster_t *create(endpoint_t *endpoint, config_t *config, uint8_t flags);
 namespace localization_configuration {
 typedef struct config {
     uint16_t cluster_revision;
-    char active_locale[35];
+    char active_locale[k_max_active_locale_length + 1];
     config() : cluster_revision(4), active_locale{0} {}
 } config_t;
 
@@ -657,7 +659,7 @@ typedef struct config {
     nullable<uint16_t> illuminance_measured_value;
     nullable<uint16_t> illuminance_min_measured_value;
     nullable<uint16_t> illuminance_max_measured_value;
-    config() : cluster_revision(3), illuminance_measured_value(0), illuminance_min_measured_value(1), illuminance_max_measured_value(2) {}
+    config() : cluster_revision(3), illuminance_measured_value(0), illuminance_min_measured_value(), illuminance_max_measured_value() {}
 } config_t;
 
 cluster_t *create(endpoint_t *endpoint, config_t *config, uint8_t flags);
@@ -714,7 +716,7 @@ cluster_t *create(endpoint_t *endpoint, config_t *config, uint8_t flags);
 namespace mode_select {
 typedef struct config {
     uint16_t cluster_revision;
-    char mode_select_description[64];
+    char mode_select_description[k_max_mode_select_description_length + 1];
     const nullable<uint16_t> standard_namespace;
     uint8_t current_mode;
     feature::on_off::config_t on_off;

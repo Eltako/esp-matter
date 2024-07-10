@@ -14,6 +14,8 @@
 
 #include <esp_log.h>
 #include <esp_matter_attribute.h>
+#include <esp_matter.h>
+#include <esp_matter_core.h>
 
 static const char *TAG = "esp_matter_attribute";
 
@@ -183,7 +185,7 @@ attribute_t *create_node_label(cluster_t *cluster, char *value, uint16_t length)
     }
     return esp_matter::attribute::create(cluster, BasicInformation::Attributes::NodeLabel::Id,
                                          ATTRIBUTE_FLAG_WRITABLE | ATTRIBUTE_FLAG_NONVOLATILE,
-                                         esp_matter_char_str(value, length));
+                                         esp_matter_char_str(value, length), k_max_node_label_length);
 }
 
 attribute_t *create_location(cluster_t *cluster, char *value, uint16_t length)
@@ -890,7 +892,7 @@ attribute_t *create_node_label(cluster_t *cluster, char *value, uint16_t length)
     }
     return esp_matter::attribute::create(cluster, BridgedDeviceBasicInformation::Attributes::NodeLabel::Id,
                                          ATTRIBUTE_FLAG_WRITABLE | ATTRIBUTE_FLAG_NONVOLATILE,
-                                         esp_matter_char_str(value, length));
+                                         esp_matter_char_str(value, length), k_max_node_label_length);
 }
 
 attribute_t *create_hardware_version(cluster_t *cluster, uint16_t value)
@@ -3311,9 +3313,13 @@ namespace attribute {
 
 attribute_t *create_active_locale(cluster_t *cluster, char *value, uint16_t length)
 {
+    if (length > k_max_active_locale_length) {
+        ESP_LOGE(TAG, "Could not create attribute, string length out of bound");
+        return NULL;
+    }
     return esp_matter::attribute::create(cluster, LocalizationConfiguration::Attributes::ActiveLocale::Id,
                                          ATTRIBUTE_FLAG_WRITABLE | ATTRIBUTE_FLAG_NONVOLATILE,
-                                         esp_matter_char_str(value, length));
+                                         esp_matter_char_str(value, length), k_max_active_locale_length);
 }
 
 attribute_t *create_supported_locales(cluster_t *cluster, uint8_t *value, uint16_t length, uint16_t count)
@@ -3635,7 +3641,9 @@ attribute_t *create_mode_select_description(cluster_t *cluster, const char * val
         ESP_LOGE(TAG, "Could not create attribute, string length out of bound");
         return NULL;
     }
-    return esp_matter::attribute::create(cluster, ModeSelect::Attributes::Description::Id, ATTRIBUTE_FLAG_NONE, esp_matter_char_str((char *)value, length));
+    return esp_matter::attribute::create(cluster, ModeSelect::Attributes::Description::Id, ATTRIBUTE_FLAG_NONE,
+                                         esp_matter_char_str((char *)value, length),
+                                         k_max_mode_select_description_length);
 }
 
 attribute_t *create_standard_namespace(cluster_t *cluster, const nullable<uint16_t> value)
@@ -3691,7 +3699,8 @@ attribute_t *create_description(cluster_t *cluster, const char * value, uint16_t
         ESP_LOGE(TAG, "Could not create attribute, string length out of bound");
         return NULL;
     }
-    return esp_matter::attribute::create(cluster, PowerSource::Attributes::Description::Id, ATTRIBUTE_FLAG_NONE, esp_matter_char_str((char *)value, length));
+    return esp_matter::attribute::create(cluster, PowerSource::Attributes::Description::Id, ATTRIBUTE_FLAG_NONE,
+                                         esp_matter_char_str((char *)value, length), k_max_description_length);
 }
 
 attribute_t *create_wired_assessed_input_voltage(cluster_t *cluster, nullable<uint32_t> value, uint32_t min, uint32_t max)
@@ -3832,11 +3841,13 @@ attribute_t *create_active_bat_faults(cluster_t *cluster, uint8_t * value, uint1
 
 attribute_t *create_bat_replacement_description(cluster_t *cluster, const char * value, uint16_t length)
 {
-    if (length > k_max_description_length) {
+    if (length > k_max_bat_replacement_description_length) {
         ESP_LOGE(TAG, "Could not create attribute, string size out of bound");
         return NULL;
     }
-    return esp_matter::attribute::create(cluster, PowerSource::Attributes::BatReplacementDescription::Id, ATTRIBUTE_FLAG_NONE, esp_matter_char_str((char *)value, length));
+    return esp_matter::attribute::create(cluster, PowerSource::Attributes::BatReplacementDescription::Id,
+                                         ATTRIBUTE_FLAG_NONE, esp_matter_char_str((char *)value, length),
+                                         k_max_bat_replacement_description_length);
 }
 
 attribute_t *create_bat_common_designation(cluster_t *cluster, const uint8_t value, uint8_t min, uint8_t max)

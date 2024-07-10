@@ -149,6 +149,9 @@ typedef struct _attribute {
     esp_matter_attr_bounds_t *bounds;
     EmberAfDefaultOrMinMaxAttributeValue default_value;
     uint16_t default_value_size;
+    // This is required when creating metadata for char string and long char string types of attributes.
+    // The size in the attribute metadata remains constant and is verified during write operations.
+    uint16_t max_val_size;
     attribute::callback_t override_callback;
     struct _attribute *next;
 } _attribute_t;
@@ -157,6 +160,7 @@ typedef struct _command {
     uint32_t command_id;
     uint16_t flags;
     command::callback_t callback;
+    command::callback_t user_callback;
     struct _command *next;
 } _command_t;
 
@@ -611,8 +615,14 @@ esp_err_t enable(endpoint_t *endpoint)
              * when writing a longer string.
              */
             if (attribute->val.type == ESP_MATTER_VAL_TYPE_CHAR_STRING ||
-                attribute->val.type  == ESP_MATTER_VAL_TYPE_LONG_CHAR_STRING) {
-                matter_attributes[attribute_index].size = attribute->val.val.a.s;
+                attribute->val.type == ESP_MATTER_VAL_TYPE_LONG_CHAR_STRING) {
+                // Once the metadata is created, the attribute size becomes fixed and cannot be modified thereafter.
+                // For string and long string types, the size should be the maximum size defined in the specification
+                // plus the size_for_storing_str_len. The length byte is 1 for char string and 2 for long char string.
+                // For example, the maximum size of the Node-Label in the basic information cluster is 32 bytes,
+                // and it is a char string. Therefore, the size should be (32 + 1).
+                uint16_t size_for_storing_str_len = attribute->val.val.a.t - attribute->val.val.a.s;
+                matter_attributes[attribute_index].size = attribute->max_val_size + size_for_storing_str_len;
             }
 
             matter_clusters[cluster_index].clusterSize += matter_attributes[attribute_index].size;
@@ -846,38 +856,13 @@ esp_err_t chip_stack_unlock()
 }
 } /* lock */
 
-static void deinit_ble_if_commissioned(void)
+static void deinit_ble_if_commissioned(intptr_t unused)
 {
-#if CONFIG_BT_ENABLED && CONFIG_USE_BLE_ONLY_FOR_COMMISSIONING
-        if(chip::Server::GetInstance().GetFabricTable().FabricCount() > 0) {
-            esp_err_t err = ESP_OK;
-#if CONFIG_BT_NIMBLE_ENABLED
-            if (!ble_hs_is_enabled()) {
-                ESP_LOGI(TAG, "BLE already deinited");
-                return;
-            }
-
-            if (nimble_port_stop() != 0) {
-                ESP_LOGE(TAG, "nimble_port_stop() failed");
-                return;
-            }
-            nimble_port_deinit();
-#if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(5, 0, 0)
-            err = esp_nimble_hci_and_controller_deinit();
-#endif
-#endif /* CONFIG_BT_NIMBLE_ENABLED */
-#if CONFIG_IDF_TARGET_ESP32
-            err |= esp_bt_mem_release(ESP_BT_MODE_BTDM);
-#elif CONFIG_IDF_TARGET_ESP32C2 || CONFIG_IDF_TARGET_ESP32C3 || CONFIG_IDF_TARGET_ESP32S3 || CONFIG_IDF_TARGET_ESP32H2
-            err |= esp_bt_mem_release(ESP_BT_MODE_BLE);
-#endif
-            if (err != ESP_OK) {
-                ESP_LOGE(TAG, "BLE deinit failed");
-                return;
-            }
-            ESP_LOGI(TAG, "BLE deinit successful and memory reclaimed");
-        }
-#endif /* CONFIG_BT_ENABLED && CONFIG_USE_BLE_ONLY_FOR_COMMISSIONING */
+#if CONFIG_USE_BLE_ONLY_FOR_COMMISSIONING
+    if (chip::Server::GetInstance().GetFabricTable().FabricCount() > 0) {
+        chip::DeviceLayer::Internal::BLEMgr().Shutdown();
+    }
+#endif /* CONFIG_USE_BLE_ONLY_FOR_COMMISSIONING */
 }
 
 static void esp_matter_chip_init_task(intptr_t context)
@@ -927,7 +912,7 @@ static void esp_matter_chip_init_task(intptr_t context)
         sEthernetNetworkCommissioningInstance.Init();
     }
 #endif
-    deinit_ble_if_commissioned();
+    PlatformMgr().ScheduleWork(deinit_ble_if_commissioned, reinterpret_cast<intptr_t>(nullptr));
     xTaskNotifyGive(task_to_notify);
 }
 
@@ -956,11 +941,11 @@ static void device_callback_internal(const ChipDeviceEvent * event, intptr_t arg
                 chip::DeviceLayer::ConnectivityManager::kWiFiAPMode_Disabled);
         }
         ESP_LOGI(TAG, "Commissioning Complete");
+        PlatformMgr().ScheduleWork(deinit_ble_if_commissioned, reinterpret_cast<intptr_t>(nullptr));
         break;
 
     case chip::DeviceLayer::DeviceEventType::kCHIPoBLEConnectionClosed:
         ESP_LOGI(TAG, "BLE Disconnected");
-        deinit_ble_if_commissioned();
         break;
     default:
         break;
@@ -1106,7 +1091,8 @@ esp_err_t factory_reset()
 }
 
 namespace attribute {
-attribute_t *create(cluster_t *cluster, uint32_t attribute_id, uint8_t flags, esp_matter_attr_val_t val)
+attribute_t *create(cluster_t *cluster, uint32_t attribute_id, uint8_t flags, esp_matter_attr_val_t val,
+                    uint16_t max_val_size)
 {
     /* Find */
     if (!cluster) {
@@ -1134,6 +1120,7 @@ attribute_t *create(cluster_t *cluster, uint32_t attribute_id, uint8_t flags, es
     attribute->endpoint_id = current_cluster->endpoint_id;
     attribute->flags = flags;
     attribute->flags |= ATTRIBUTE_FLAG_EXTERNAL_STORAGE;
+    attribute->max_val_size = max_val_size;
 
     // After reboot, string and array are treated as Invalid. So need to store val.type and size of attribute value.
     attribute->val.type = val.type;
@@ -1428,6 +1415,7 @@ command_t *create(cluster_t *cluster, uint32_t command_id, uint8_t flags, callba
     command->command_id = command_id;
     command->flags = flags;
     command->callback = callback;
+    command->user_callback = NULL;
 
     /* Add */
     _command_t *previous_command = NULL;
@@ -1513,6 +1501,25 @@ callback_t get_callback(command_t *command)
     }
     _command_t *current_command = (_command_t *)command;
     return current_command->callback;
+}
+
+callback_t get_user_callback(command_t *command)
+{
+    if (!command) {
+        ESP_LOGE(TAG, "Command cannot be NULL");
+        return NULL;
+    }
+    _command_t *current_command = (_command_t *)command;
+    return current_command->user_callback;
+}
+
+void set_user_callback(command_t *command, callback_t user_callback)
+{
+    if (!command) {
+        ESP_LOGE(TAG, "Command cannot be NULL");
+    }
+    _command_t *current_command = (_command_t *)command;
+    current_command->user_callback = user_callback;
 }
 
 uint16_t get_flags(command_t *command)

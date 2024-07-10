@@ -430,15 +430,19 @@ namespace attribute {
  *
  * This will create a new attribute and add it to the cluster.
  *
- * @param[in] cluster Cluster handle.
- * @param[in] attribute_id Attribute ID for the attribute.
- * @param[in] flags Bitmap of `attribute_flags_t`.
- * @param[in] val Default type and value of the attribute. Use appropriate elements as per the value type.
+ * @param[in] cluster       Cluster handle.
+ * @param[in] attribute_id  Attribute ID for the attribute.
+ * @param[in] flags         Bitmap of `attribute_flags_t`.
+ * @param[in] val           Default type and value of the attribute. Use appropriate elements as per the value type.
+ * @param[in] max_val_size  For attributes of type char string and long char string, the size should correspond to the
+ *                          maximum size defined in the specification. However, for other types of attributes, this
+ *                          parameter remains unused, and therefore the default value is set to 0
  *
  * @return Attribute handle on success.
  * @return NULL in case of failure.
  */
-attribute_t *create(cluster_t *cluster, uint32_t attribute_id, uint8_t flags, esp_matter_attr_val_t val);
+attribute_t *create(cluster_t *cluster, uint32_t attribute_id, uint8_t flags, esp_matter_attr_val_t val,
+                    uint16_t max_val_size = 0);
 
 /** Get attribute
  *
@@ -681,6 +685,28 @@ uint32_t get_id(command_t *command);
  * @return NULL in case of failure or if the callback was not set when creating the command.
  */
 callback_t get_callback(command_t *command);
+
+/** Get command user_callback
+ *
+ * Get the command user_callback for the command.
+ *
+ * @param[in] command Command handle.
+ *
+ * @return Command user_callback on success.
+ * @return NULL in case of failure or if the callback was not set when creating the command.
+ */
+callback_t get_user_callback(command_t *command);
+
+/** Set command user_callback
+ *
+ * Set the user_callback for the command.
+ *
+ * @param[in] command Command handle.
+ * @param[in] user_callback callback_t.
+ *
+ * @return void
+ */
+void set_user_callback(command_t *command, callback_t user_callback);
 
 /** Get command flags
  *
