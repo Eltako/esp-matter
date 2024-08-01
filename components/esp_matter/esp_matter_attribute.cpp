@@ -155,8 +155,12 @@ attribute_t *create_data_model_revision(cluster_t *cluster, uint16_t value)
 
 attribute_t *create_vendor_name(cluster_t *cluster, char *value, uint16_t length)
 {
+    if (length > k_max_vendor_name_length) {
+        ESP_LOGE(TAG, "Could not create attribute, string length out of bound");
+        return NULL;
+    }
     return esp_matter::attribute::create(cluster, BasicInformation::Attributes::VendorName::Id, ATTRIBUTE_FLAG_NONE,
-                                         esp_matter_char_str(value, length));
+                                         esp_matter_char_str(value, length), k_max_vendor_name_length);
 }
 
 attribute_t *create_vendor_id(cluster_t *cluster, uint16_t value)
@@ -167,8 +171,12 @@ attribute_t *create_vendor_id(cluster_t *cluster, uint16_t value)
 
 attribute_t *create_product_name(cluster_t *cluster, char *value, uint16_t length)
 {
+    if (length > k_max_product_name_length) {
+        ESP_LOGE(TAG, "Could not create attribute, string length out of bound");
+        return NULL;
+    }
     return esp_matter::attribute::create(cluster, BasicInformation::Attributes::ProductName::Id, ATTRIBUTE_FLAG_NONE,
-                                         esp_matter_char_str(value, length));
+                                         esp_matter_char_str(value, length), k_max_product_name_length);
 }
 
 attribute_t *create_product_id(cluster_t *cluster, uint16_t value)
@@ -233,26 +241,42 @@ attribute_t *create_manufacturing_date(cluster_t *cluster, char *value, uint16_t
 
 attribute_t *create_part_number(cluster_t *cluster, char *value, uint16_t length)
 {
+    if (length > k_max_part_number_length) {
+        ESP_LOGE(TAG, "Could not create attribute, string length out of bound");
+        return NULL;
+    }
     return esp_matter::attribute::create(cluster, BasicInformation::Attributes::PartNumber::Id, ATTRIBUTE_FLAG_NONE,
-                                         esp_matter_char_str(value, length));
+                                         esp_matter_char_str(value, length), k_max_part_number_length);
 }
 
 attribute_t *create_product_url(cluster_t *cluster, char *value, uint16_t length)
 {
+    if (length > k_max_product_url_length) {
+        ESP_LOGE(TAG, "Could not create attribute, string length out of bound");
+        return NULL;
+    }
     return esp_matter::attribute::create(cluster, BasicInformation::Attributes::ProductURL::Id, ATTRIBUTE_FLAG_NONE,
-                                         esp_matter_char_str(value, length));
+                                         esp_matter_char_str(value, length), k_max_product_url_length);
 }
 
 attribute_t *create_product_label(cluster_t *cluster, char *value, uint16_t length)
 {
+    if (length > k_max_product_label_length) {
+        ESP_LOGE(TAG, "Could not create attribute, string length out of bound");
+        return NULL;
+    }
     return esp_matter::attribute::create(cluster, BasicInformation::Attributes::ProductLabel::Id, ATTRIBUTE_FLAG_NONE,
-                                         esp_matter_char_str(value, length));
+                                         esp_matter_char_str(value, length), k_max_product_label_length);
 }
 
 attribute_t *create_serial_number(cluster_t *cluster, char *value, uint16_t length)
-{
+{    
+    if (length > k_max_serial_number_length) {
+        ESP_LOGE(TAG, "Could not create attribute, string length out of bound");
+        return NULL;
+    }
     return esp_matter::attribute::create(cluster, BasicInformation::Attributes::SerialNumber::Id, ATTRIBUTE_FLAG_NONE,
-                                         esp_matter_char_str(value, length));
+                                         esp_matter_char_str(value, length), k_max_serial_number_length);
 }
 
 attribute_t *create_local_config_disabled(cluster_t *cluster, bool value)
@@ -269,8 +293,12 @@ attribute_t *create_reachable(cluster_t *cluster, bool value)
 
 attribute_t *create_unique_id(cluster_t *cluster, char *value, uint16_t length)
 {
+    if (length > k_max_unique_id_length) {
+        ESP_LOGE(TAG, "Could not create attribute, string length out of bound");
+        return NULL;
+    }
     return esp_matter::attribute::create(cluster, BasicInformation::Attributes::UniqueID::Id, ATTRIBUTE_FLAG_NONE,
-                                         esp_matter_char_str(value, length));
+                                         esp_matter_char_str(value, length), k_max_unique_id_length);
 }
 
 attribute_t *create_product_appearance(cluster_t *cluster, uint8_t *value, uint16_t length, uint16_t count)
@@ -868,8 +896,12 @@ namespace attribute {
 
 attribute_t *create_vendor_name(cluster_t *cluster, char *value, uint16_t length)
 {
+    if (length > k_max_vendor_name_length) {
+        ESP_LOGE(TAG, "Could not create attribute, string length out of bound");
+        return NULL;
+    }
     return esp_matter::attribute::create(cluster, BridgedDeviceBasicInformation::Attributes::VendorName::Id, ATTRIBUTE_FLAG_NONE,
-                                         esp_matter_char_str(value, length));
+                                         esp_matter_char_str(value, length), k_max_vendor_name_length);
 }
 
 attribute_t *create_vendor_id(cluster_t *cluster, uint16_t value)
@@ -880,8 +912,12 @@ attribute_t *create_vendor_id(cluster_t *cluster, uint16_t value)
 
 attribute_t *create_product_name(cluster_t *cluster, char *value, uint16_t length)
 {
+    if (length > k_max_vendor_name_length) {
+        ESP_LOGE(TAG, "Could not create attribute, string length out of bound");
+        return NULL;
+    }
     return esp_matter::attribute::create(cluster, BridgedDeviceBasicInformation::Attributes::ProductName::Id, ATTRIBUTE_FLAG_NONE,
-                                         esp_matter_char_str(value, length));
+                                         esp_matter_char_str(value, length), k_max_vendor_name_length);
 }
 
 attribute_t *create_node_label(cluster_t *cluster, char *value, uint16_t length)
@@ -927,26 +963,42 @@ attribute_t *create_manufacturing_date(cluster_t *cluster, char *value, uint16_t
 
 attribute_t *create_part_number(cluster_t *cluster, char *value, uint16_t length)
 {
+    if (length > k_max_part_number_length) {
+        ESP_LOGE(TAG, "Could not create attribute, string length out of bound");
+        return NULL;
+    }
     return esp_matter::attribute::create(cluster, BridgedDeviceBasicInformation::Attributes::PartNumber::Id, ATTRIBUTE_FLAG_NONE,
-                                         esp_matter_char_str(value, length));
+                                         esp_matter_char_str(value, length), k_max_part_number_length);
 }
 
 attribute_t *create_product_url(cluster_t *cluster, char *value, uint16_t length)
 {
+    if (length > k_max_product_url_length) {
+        ESP_LOGE(TAG, "Could not create attribute, string length out of bound");
+        return NULL;
+    }
     return esp_matter::attribute::create(cluster, BridgedDeviceBasicInformation::Attributes::ProductURL::Id, ATTRIBUTE_FLAG_NONE,
-                                         esp_matter_char_str(value, length));
+                                         esp_matter_char_str(value, length), k_max_product_url_length);
 }
 
 attribute_t *create_product_label(cluster_t *cluster, char *value, uint16_t length)
 {
+    if (length > k_max_product_label_length) {
+        ESP_LOGE(TAG, "Could not create attribute, string length out of bound");
+        return NULL;
+    }
     return esp_matter::attribute::create(cluster, BridgedDeviceBasicInformation::Attributes::ProductLabel::Id, ATTRIBUTE_FLAG_NONE,
-                                         esp_matter_char_str(value, length));
+                                         esp_matter_char_str(value, length), k_max_product_label_length);
 }
 
 attribute_t *create_serial_number(cluster_t *cluster, char *value, uint16_t length)
 {
+    if (length > k_max_serial_number_length) {
+        ESP_LOGE(TAG, "Could not create attribute, string length out of bound");
+        return NULL;
+    }
     return esp_matter::attribute::create(cluster, BridgedDeviceBasicInformation::Attributes::SerialNumber::Id, ATTRIBUTE_FLAG_NONE,
-                                         esp_matter_char_str(value, length));
+                                         esp_matter_char_str(value, length), k_max_serial_number_length);
 }
 
 attribute_t *create_reachable(cluster_t *cluster, bool value)
@@ -957,8 +1009,12 @@ attribute_t *create_reachable(cluster_t *cluster, bool value)
 
 attribute_t *create_unique_id(cluster_t *cluster, char *value, uint16_t length)
 {
+    if (length > k_max_unique_id_length) {
+        ESP_LOGE(TAG, "Could not create attribute, string length out of bound");
+        return NULL;
+    }
     return esp_matter::attribute::create(cluster, BridgedDeviceBasicInformation::Attributes::UniqueID::Id, ATTRIBUTE_FLAG_NONE,
-                                         esp_matter_char_str(value, length));
+                                         esp_matter_char_str(value, length), k_max_unique_id_length);
 }
 
 attribute_t *create_product_appearance(cluster_t *cluster, uint8_t *value, uint16_t length, uint16_t count)
