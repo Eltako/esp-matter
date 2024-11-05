@@ -6,6 +6,7 @@
    CONDITIONS OF ANY KIND, either express or implied.
 */
 
+#include "esp_heap_caps.h"
 #include <esp_err.h>
 #include <esp_log.h>
 #include <nvs_flash.h>
@@ -22,6 +23,7 @@
 
 #include <app/server/CommissioningWindowManager.h>
 #include <app/server/Server.h>
+#include <portmacro.h>
 
 static const char *TAG = "app_main";
 uint16_t light_endpoint_id = 0;
@@ -30,6 +32,16 @@ using namespace esp_matter;
 using namespace esp_matter::attribute;
 using namespace esp_matter::endpoint;
 using namespace chip::app::Clusters;
+
+
+void check_heap_corruption(void*) {
+    vTaskDelay(10000 / portTICK_PERIOD_MS);
+    while(true) {
+		printf("Checking heap\n");
+        heap_caps_check_integrity_all(true);
+        vTaskDelay(2000 / portTICK_PERIOD_MS);
+    }
+}
 
 constexpr auto k_timeout_seconds = 300;
 
@@ -109,6 +121,7 @@ static void app_event_cb(const ChipDeviceEvent *event, intptr_t arg)
 
     case chip::DeviceLayer::DeviceEventType::kBLEDeinitialized:
         ESP_LOGI(TAG, "BLE deinitialized and memory reclaimed");
+        ::xTaskCreate(&check_heap_corruption, "heap_check", 3072, (void*) nullptr, 1, nullptr);
         break;
 
     default:
