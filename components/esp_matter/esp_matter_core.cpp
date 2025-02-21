@@ -859,6 +859,11 @@ static esp_err_t chip_init(event_callback_t callback, intptr_t callback_arg, chi
     return ESP_OK;
 }
 
+bool is_started()
+{
+    return esp_matter_started;
+}
+
 esp_err_t start(event_callback_t callback,
                 intptr_t callback_arg,
                 chip::RendezvousInformationFlags rendezvous_flags,
