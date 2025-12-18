@@ -2585,11 +2585,8 @@ esp_err_t add(cluster_t *cluster)
     update_feature_map(cluster, get_id());
 
     attribute::create_smoke_state(cluster, 0);
-    attribute::create_contamination_state(cluster, 0);
-    attribute::create_smoke_sensitivity_level(cluster, 0);
 
     event::create_smoke_alarm(cluster);
-    event::create_interconnect_smoke_alarm(cluster);
 
     return ESP_OK;
 }
