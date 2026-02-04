@@ -726,7 +726,8 @@ static void esp_matter_chip_init_task(intptr_t context)
 #ifdef CONFIG_ESP_MATTER_ENABLE_DATA_MODEL
     // Group data provider injection for dynamic data model
     {
-        uint8_t groups_server_cluster_count = cluster::groups::get_server_cluster_count();
+        //We should reserve one endpoint for root node endpoint
+        uint8_t max_groups_server_cluster_count = CONFIG_ESP_MATTER_MAX_DYNAMIC_ENDPOINT_COUNT - 1;
         uint16_t max_groups_per_fabric = groups_server_cluster_count * MAX_GROUPS_PER_FABRIC_PER_ENDPOINT;
 
         // since groupDataProvider is a static variable, it won't be released.
