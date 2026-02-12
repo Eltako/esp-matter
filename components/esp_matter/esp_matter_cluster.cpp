@@ -984,8 +984,6 @@ cluster_t *create(endpoint_t *endpoint, config_t *config, uint8_t flags)
         } else {
             ESP_LOGE(TAG, "Config is NULL. Cannot add some attributes.");
         }
-
-        server_cluster_count++;
     }
 
     /* Commands */
