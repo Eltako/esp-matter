@@ -728,7 +728,7 @@ static void esp_matter_chip_init_task(intptr_t context)
     {
         //We should reserve one endpoint for root node endpoint
         uint8_t max_groups_server_cluster_count = CONFIG_ESP_MATTER_MAX_DYNAMIC_ENDPOINT_COUNT - 1;
-        uint16_t max_groups_per_fabric = groups_server_cluster_count * MAX_GROUPS_PER_FABRIC_PER_ENDPOINT;
+        uint16_t max_groups_per_fabric = max_groups_server_cluster_count * MAX_GROUPS_PER_FABRIC_PER_ENDPOINT;
 
         // since groupDataProvider is a static variable, it won't be released.
         static chip::Credentials::GroupDataProviderImpl groupDataProvider(max_groups_per_fabric, CHIP_CONFIG_MAX_GROUP_KEYS_PER_FABRIC);
