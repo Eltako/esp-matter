@@ -2171,5 +2171,19 @@ uint32_t get_client_cluster_endpoint_count(uint32_t cluster_id)
     return get_cluster_count(chip::kInvalidEndpointId, cluster_id, CLUSTER_FLAG_CLIENT);
 }
 
+esp_err_t set_min_unused_endpoint_id(node_t * node, uint16_t endpoint_id) {
+    if (!node) {
+        ESP_LOGE(TAG, "Node cannot be NULL");
+        return ESP_FAIL;
+    }
+    _node_t *current_node = (_node_t *)node;
+    ESP_LOGI(TAG, "Setting min_unused_endpoint_id to %d", endpoint_id);
+    current_node->min_unused_endpoint_id = endpoint_id;
+    if (esp_matter_started) {
+        return store_min_unused_endpoint_id();
+    }
+    return ESP_OK;
+}
+
 } /* node */
 } /* esp_matter */

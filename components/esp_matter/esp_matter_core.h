@@ -166,6 +166,8 @@ esp_err_t destroy_raw();
  */
 node_t *get();
 
+esp_err_t set_min_unused_endpoint_id(node_t * node, uint16_t endpoint_id);
+
 /** Destroy node
  *
  * This will destroy the node and all the endpoints, clusters, attributes, commands and events associated with it.
