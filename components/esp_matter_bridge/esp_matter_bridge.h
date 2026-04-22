@@ -38,6 +38,11 @@ typedef struct device {
 
 typedef esp_err_t (*bridge_device_type_callback_t)(esp_matter::endpoint_t *ep, uint32_t device_type_id, void *priv_data);
 
+/**
+ * This function needs to be called before using any other APIs in this namespace to initialize the necessary data structure for the bridge module.
+ */
+esp_err_t setup();
+
 esp_err_t get_bridged_endpoint_ids(uint16_t *matter_endpoint_id_array);
 
 esp_err_t erase_bridged_device_info(uint16_t matter_endpoint_id);

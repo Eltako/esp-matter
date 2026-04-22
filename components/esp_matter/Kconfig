@@ -136,7 +136,7 @@ menu "ESP Matter"
 
     config ESP_MATTER_MAX_DYNAMIC_ENDPOINT_COUNT
         int "Maximum dynamic endpoints"
-        range 1 255
+        range 1 4096
         default 16
         help
             The maximum dynamic endpoints supported.

@@ -24,13 +24,29 @@
 #if MAX_BRIDGED_DEVICE_COUNT > 0
 
 static const char *TAG = "esp_matter_bridge";
-
+static constexpr auto SIZE_OF_BRIDGED_ENDPOINT_ID_ARRAY = MAX_BRIDGED_DEVICE_COUNT * sizeof(uint16_t);
 using namespace esp_matter;
 using namespace esp_matter::endpoint;
 
 namespace esp_matter_bridge {
 
-static uint16_t bridged_endpoint_id_array[MAX_BRIDGED_DEVICE_COUNT];
+static uint16_t * bridged_endpoint_id_array;
+
+esp_err_t setup() {
+    if (bridged_endpoint_id_array) {
+        ESP_LOGW(TAG, "setup has already been called");
+        return ESP_OK;
+    }
+    bridged_endpoint_id_array = (uint16_t *)esp_matter_mem_calloc(MAX_BRIDGED_DEVICE_COUNT, sizeof(uint16_t));
+    for(int i = 0; i < MAX_BRIDGED_DEVICE_COUNT; ++i) {
+        bridged_endpoint_id_array[i] = chip::kInvalidEndpointId;
+    }
+    if (!bridged_endpoint_id_array) {
+        ESP_LOGE(TAG, "Failed to allocate memory for bridged_endpoint_id_array");
+        return ESP_ERR_NO_MEM;
+    }
+    return ESP_OK;
+}
 
 /** Persistent Bridged Device Info **/
 static esp_err_t store_device_persistent_info(device_persistent_info_t *persistent_info)
@@ -128,7 +144,7 @@ static esp_err_t store_bridged_endpoint_ids()
         return err;
     }
     err = nvs_set_blob(handle, nvs_key_allocator::endpoint_ids_array().KeyName(), bridged_endpoint_id_array,
-                       sizeof(bridged_endpoint_id_array));
+                       SIZE_OF_BRIDGED_ENDPOINT_ID_ARRAY);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Failed on nvs_set_blob when storing bridged_endpoint_ids");
     }
@@ -150,7 +166,7 @@ static esp_err_t nvs_get_bridged_endpoint_ids(const char *nvs_namespace, const c
                  nvs_namespace, err);
         return err;
     }
-    size_t len = sizeof(bridged_endpoint_id_array);
+    size_t len = SIZE_OF_BRIDGED_ENDPOINT_ID_ARRAY;
     err = nvs_get_blob(handle, nvs_key, bridged_endpoint_id_array, &len);
     nvs_close(handle);
     return err;
@@ -191,7 +207,7 @@ esp_err_t get_bridged_endpoint_ids(uint16_t *matter_endpoint_id_array)
         ESP_LOGE(TAG, "matter_endpoint_id_array is NULL. Failed to copy the bridged_endpoint_id_array to it");
         return ESP_ERR_INVALID_ARG;
     }
-    memcpy(matter_endpoint_id_array, bridged_endpoint_id_array, sizeof(bridged_endpoint_id_array));
+    memcpy(matter_endpoint_id_array, bridged_endpoint_id_array, SIZE_OF_BRIDGED_ENDPOINT_ID_ARRAY);
     return ESP_OK;
 }
 
