@@ -412,7 +412,7 @@ static int get_next_index()
             return index;
         }
     }
-    return 0xFFFF;
+    return -1;
 }
 
 static esp_err_t disable(endpoint_t *endpoint)
@@ -641,6 +641,14 @@ esp_err_t enable(endpoint_t *endpoint)
 
     /* Add Endpoint */
     endpoint_index = endpoint::get_next_index();
+    if (endpoint_index < 0) {
+        ESP_LOGE(TAG, "No available endpoint index");
+        err = ESP_FAIL;
+        if (lock_status == lock::SUCCESS) {
+            lock::chip_stack_unlock();
+        }
+        goto cleanup;
+    }
     status = emberAfSetDynamicEndpoint(endpoint_index, current_endpoint->endpoint_id, current_endpoint->endpoint_type, data_versions,
                                        device_types, current_endpoint->parent_endpoint_id);
     if (status != CHIP_NO_ERROR) {
