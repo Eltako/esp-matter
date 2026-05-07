@@ -704,6 +704,29 @@ static esp_err_t enable_all()
 } /* endpoint */
 
 namespace lock {
+
+class StackLock {
+public:
+    StackLock() {
+#if CHIP_STACK_LOCK_TRACKING_ENABLED
+        if (PlatformMgr().IsChipStackLockedByCurrentThread()) {
+            return;
+        }
+#endif
+        PlatformMgr().LockChipStack();
+        _locked_by_us = true;
+    }
+
+    ~StackLock() {
+        if (_locked_by_us) {
+            PlatformMgr().UnlockChipStack();
+        }
+    }
+private:
+    bool _locked_by_us{false};
+};
+
+
 #define DEFAULT_TICKS (500 / portTICK_PERIOD_MS) /* 500 ms in ticks */
 status_t chip_stack_lock(uint32_t ticks_to_wait)
 {
@@ -1844,6 +1867,8 @@ endpoint_t *resume(node_t *node, uint8_t flags, uint16_t endpoint_id, void *priv
 
 esp_err_t destroy(node_t *node, endpoint_t *endpoint)
 {
+    lock::StackLock chip_stack_lock;
+
     VerifyOrReturnError((node && endpoint), ESP_ERR_INVALID_ARG, ESP_LOGE(TAG, "Node or endpoint cannot be NULL"));
     _node_t *current_node = (_node_t *)node;
     _endpoint_t *_endpoint = (_endpoint_t *)endpoint;
