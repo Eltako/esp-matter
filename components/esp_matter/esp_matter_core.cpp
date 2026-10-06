@@ -1826,6 +1826,10 @@ endpoint_t *resume(node_t *node, uint8_t flags, uint16_t endpoint_id, void *priv
     /* Find */
     VerifyOrReturnValue(node, NULL, ESP_LOGE(TAG, "Node cannot be NULL"));
     _node_t *current_node = (_node_t *)node;
+
+    VerifyOrReturnValue(get_count(node) < CONFIG_ESP_MATTER_MAX_DYNAMIC_ENDPOINT_COUNT, NULL, ESP_LOGE(TAG, "Dynamic endpoint count cannot be greater than CONFIG_ESP_MATTER_MAX_DYNAMIC_ENDPOINT_COUNT:%u",
+                CONFIG_ESP_MATTER_MAX_DYNAMIC_ENDPOINT_COUNT));
+
     _endpoint_t *previous_endpoint = NULL;
     _endpoint_t *current_endpoint = current_node->endpoint_list;
     while (current_endpoint) {
