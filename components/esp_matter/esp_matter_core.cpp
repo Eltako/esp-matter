@@ -670,17 +670,27 @@ cleanup:
     esp_matter_mem_free(accepted_command_ids);
     esp_matter_mem_free(event_ids);
     if (current_endpoint->endpoint_type->cluster) {
-        for (int cluster_index = 0; cluster_index < cluster_count; cluster_index++) {
-            /* Free attributes */
-            esp_matter_mem_free((void *)current_endpoint->endpoint_type->cluster[cluster_index].attributes);
+        /* Only the clusters before cluster_index have been filled in by this call. The remaining entries may still hold
+         * uninitialized pointers. */
+        for (int processed_index = 0; processed_index < cluster_index; processed_index++) {
+            EmberAfCluster *matter_cluster = (EmberAfCluster *)&current_endpoint->endpoint_type->cluster[processed_index];
+            /* Attributes are not freed here: they are owned by the cluster (_cluster_t::matter_attributes) and freed in
+             * cluster::destroy(). Freeing them here left dangling pointers that crashed on the next enable() and caused a
+             * double free on destroy(). */
             /* Free commands */
-            esp_matter_mem_free((void *)current_endpoint->endpoint_type->cluster[cluster_index].acceptedCommandList);
-            esp_matter_mem_free((void *)current_endpoint->endpoint_type->cluster[cluster_index].generatedCommandList);
+            esp_matter_mem_free((void *)matter_cluster->acceptedCommandList);
+            matter_cluster->acceptedCommandList = NULL;
+            esp_matter_mem_free((void *)matter_cluster->generatedCommandList);
+            matter_cluster->generatedCommandList = NULL;
             /* Free events */
-            esp_matter_mem_free((void *)current_endpoint->endpoint_type->cluster[cluster_index].eventList);
+            esp_matter_mem_free((void *)matter_cluster->eventList);
+            matter_cluster->eventList = NULL;
+            matter_cluster->eventCount = 0;
         }
-
     }
+    /* Reset the values accumulated by this call, so that enable() can be retried and destroy() works */
+    current_endpoint->endpoint_type->endpointSize = 0;
+    current_endpoint->endpoint_type->clusterCount = 0;
     esp_matter_mem_free(data_versions_ptr);
     current_endpoint->data_versions_ptr = NULL;
     esp_matter_mem_free(device_types_ptr);
