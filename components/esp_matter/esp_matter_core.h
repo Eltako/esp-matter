@@ -418,6 +418,18 @@ esp_err_t set_identify(uint16_t endpoint_id, void *identify);
  */
 esp_err_t enable(endpoint_t *endpoint);
 
+/** Disable endpoint
+ *
+ * Disable an endpoint which has been enabled before. The endpoint is removed from the data model, but not destroyed,
+ * so it can be enabled again with `enable()`. Everything allocated by `enable()` is freed.
+ *
+ * @param[in] endpoint Endpoint handle.
+ *
+ * @return ESP_OK on success.
+ * @return error in case of failure, e.g. if the endpoint is not enabled.
+ */
+esp_err_t disable(endpoint_t *endpoint);
+
 } /* endpoint */
 
 namespace cluster {

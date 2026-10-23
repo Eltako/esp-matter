@@ -415,7 +415,37 @@ static int get_next_index()
     return -1;
 }
 
-static esp_err_t disable(endpoint_t *endpoint)
+/* Frees what enable() allocated for the endpoint and resets the values it accumulated, so that enable() can be called
+ * again. Must only be called while the endpoint is not registered with the data model. */
+static void release_enable_resources(_endpoint_t *current_endpoint)
+{
+    EmberAfEndpointType *endpoint_type = current_endpoint->endpoint_type;
+    if (endpoint_type && endpoint_type->cluster) {
+        for (int cluster_index = 0; cluster_index < endpoint_type->clusterCount; cluster_index++) {
+            EmberAfCluster *matter_cluster = (EmberAfCluster *)&endpoint_type->cluster[cluster_index];
+            /* Attributes are owned by the cluster (_cluster_t::matter_attributes) and freed in cluster::destroy() */
+            /* Free commands */
+            esp_matter_mem_free((void *)matter_cluster->acceptedCommandList);
+            matter_cluster->acceptedCommandList = NULL;
+            esp_matter_mem_free((void *)matter_cluster->generatedCommandList);
+            matter_cluster->generatedCommandList = NULL;
+            /* Free events */
+            esp_matter_mem_free((void *)matter_cluster->eventList);
+            matter_cluster->eventList = NULL;
+            matter_cluster->eventCount = 0;
+        }
+    }
+    if (endpoint_type) {
+        endpoint_type->endpointSize = 0;
+        endpoint_type->clusterCount = 0;
+    }
+    esp_matter_mem_free(current_endpoint->data_versions_ptr);
+    current_endpoint->data_versions_ptr = NULL;
+    esp_matter_mem_free(current_endpoint->device_types_ptr);
+    current_endpoint->device_types_ptr = NULL;
+}
+
+esp_err_t disable(endpoint_t *endpoint)
 {
     VerifyOrReturnError(endpoint, ESP_ERR_INVALID_ARG, ESP_LOGE(TAG, "Endpoint cannot be NULL"));
 
@@ -435,6 +465,8 @@ static esp_err_t disable(endpoint_t *endpoint)
         return ESP_FAIL;
     }
     emberAfClearDynamicEndpoint(endpoint_index);
+    /* Released while still holding the lock, since the data model may have used these until the endpoint was cleared */
+    release_enable_resources(current_endpoint);
 
     if (lock_status == lock::SUCCESS) {
         lock::chip_stack_unlock();
