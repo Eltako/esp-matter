@@ -1590,6 +1590,12 @@ static esp_err_t destroy(cluster_t *cluster)
     /* Parse and delete all events */
     SinglyLinkedList<_event_t>::delete_list(&current_cluster->event_list);
 
+    /* Free matter_attributes if allocated */
+    if (current_cluster->matter_attributes) {
+        esp_matter_mem_free(current_cluster->matter_attributes);
+        current_cluster->matter_attributes = NULL;
+    }
+
     /* Free */
     esp_matter_mem_free(current_cluster);
     return ESP_OK;
@@ -1843,8 +1849,7 @@ esp_err_t destroy(node_t *node, endpoint_t *endpoint)
         VerifyOrReturnError(endpoint_type, ESP_ERR_INVALID_STATE, ESP_LOGE(TAG, "endpoint %" PRIu16 "'s endpoint_type is NULL", current_endpoint->endpoint_id));
         int cluster_count = endpoint_type->clusterCount;
         for (int cluster_index = 0; cluster_index < cluster_count; cluster_index++) {
-            /* Free attributes */
-            esp_matter_mem_free((void *)endpoint_type->cluster[cluster_index].attributes);
+            /* Attributes are freed in cluster::destroy() */
             /* Free commands */
             if (endpoint_type->cluster[cluster_index].acceptedCommandList) {
                 esp_matter_mem_free((void *)endpoint_type->cluster[cluster_index].acceptedCommandList);
