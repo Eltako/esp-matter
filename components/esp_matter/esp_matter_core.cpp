@@ -1984,8 +1984,11 @@ esp_err_t destroy(node_t *node, endpoint_t *endpoint)
         (_endpoint->flags & ENDPOINT_FLAG_DESTROYABLE), ESP_FAIL,
         ESP_LOGE(TAG, "This endpoint cannot be deleted since the ENDPOINT_FLAG_DESTROYABLE is not set"));
 
-    /* Disable */
-    disable(endpoint);
+    /* Disable, if enabled. An endpoint may already be disabled, e.g. when a bridge has hidden a bridged device before
+     * destroying it. disable() would then only log an error. */
+    if (is_enabled(_endpoint)) {
+        disable(endpoint);
+    }
 
     /* Delete identify. Done here and not in disable(), so that an endpoint can be disabled and enabled again without
      * losing it. This also covers endpoints that were already disabled before destroy(). */
