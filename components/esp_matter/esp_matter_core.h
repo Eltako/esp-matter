@@ -414,6 +414,7 @@ esp_err_t set_identify(uint16_t endpoint_id, void *identify);
  * @param[in] endpoint Endpoint handle.
  *
  * @return ESP_OK on success.
+ * @return ESP_ERR_INVALID_STATE if the endpoint is already enabled. The endpoint is not changed in this case.
  * @return error in case of failure.
  */
 esp_err_t enable(endpoint_t *endpoint);

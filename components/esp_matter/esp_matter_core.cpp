@@ -428,6 +428,12 @@ static int get_next_index()
     return -1;
 }
 
+/* Whether the endpoint is registered with the data model, i.e. enabled. Must be called with the CHIP stack lock held. */
+static bool is_enabled(const _endpoint_t *endpoint)
+{
+    return emberAfGetDynamicIndexFromEndpoint(endpoint->endpoint_id) != 0xFFFF;
+}
+
 /* Frees what enable() allocated for the endpoint and resets the values it accumulated, so that enable() can be called
  * again. Must only be called while the endpoint is not registered with the data model. */
 static void release_enable_resources(_endpoint_t *current_endpoint)
@@ -495,6 +501,19 @@ esp_err_t enable(endpoint_t *endpoint)
 {
     VerifyOrReturnError(endpoint, ESP_ERR_INVALID_ARG, ESP_LOGE(TAG, "Endpoint cannot be NULL"));
     _endpoint_t *current_endpoint = (_endpoint_t *)endpoint;
+
+    /* Refuse an endpoint that is already enabled before anything is changed: the code below overwrites the cluster
+     * entries of endpoint_type and the data_versions/device_types pointers, which the data model is still using. */
+    {
+        lock::status_t check_lock_status = lock::chip_stack_lock(portMAX_DELAY);
+        VerifyOrReturnError(check_lock_status != lock::FAILED, ESP_FAIL, ESP_LOGE(TAG, "Could not get task context"));
+        bool already_enabled = is_enabled(current_endpoint);
+        if (check_lock_status == lock::SUCCESS) {
+            lock::chip_stack_unlock();
+        }
+        VerifyOrReturnError(!already_enabled, ESP_ERR_INVALID_STATE,
+                            ESP_LOGE(TAG, "Endpoint %" PRIu16 " is already enabled", current_endpoint->endpoint_id));
+    }
 
     /* Device types */
     EmberAfDeviceType *device_types_ptr =
