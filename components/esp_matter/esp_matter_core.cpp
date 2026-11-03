@@ -485,11 +485,8 @@ esp_err_t disable(endpoint_t *endpoint)
         lock::chip_stack_unlock();
     }
 
-    /* Delete identify */
-    if (current_endpoint->identify) {
-        chip::Platform::Delete(current_endpoint->identify);
-        current_endpoint->identify = NULL;
-    }
+    /* The identify object is not deleted here: it is created together with the Identify cluster
+     * (cluster::identify::create()) and enable() does not create it again. destroy() deletes it. */
 
     return ESP_OK;
 }
@@ -1970,6 +1967,13 @@ esp_err_t destroy(node_t *node, endpoint_t *endpoint)
 
     /* Disable */
     disable(endpoint);
+
+    /* Delete identify. Done here and not in disable(), so that an endpoint can be disabled and enabled again without
+     * losing it. This also covers endpoints that were already disabled before destroy(). */
+    if (_endpoint->identify) {
+        chip::Platform::Delete(_endpoint->identify);
+        _endpoint->identify = NULL;
+    }
 
     /* Find current endpoint */
     _endpoint_t *current_endpoint = current_node->endpoint_list;

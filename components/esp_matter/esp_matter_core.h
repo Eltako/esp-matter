@@ -421,7 +421,8 @@ esp_err_t enable(endpoint_t *endpoint);
 /** Disable endpoint
  *
  * Disable an endpoint which has been enabled before. The endpoint is removed from the data model, but not destroyed,
- * so it can be enabled again with `enable()`. Everything allocated by `enable()` is freed.
+ * so it can be enabled again with `enable()`. Everything allocated by `enable()` is freed. Clusters, attributes and the
+ * identify object stay, they are freed by `destroy()`.
  *
  * @param[in] endpoint Endpoint handle.
  *
